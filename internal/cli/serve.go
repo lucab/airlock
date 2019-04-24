@@ -1,6 +1,10 @@
 package cli
 
 import (
+	"fmt"
+	"net/http"
+
+	"github.com/coreos/airlock/internal/server"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -21,6 +25,13 @@ func runServe(cmd *cobra.Command, cmdArgs []string) error {
 		"address": runSettings.ServiceAddress,
 		"port":    runSettings.ServicePort,
 	}).Info("starting service")
+
+	airlock := server.Airlock{*runSettings}
+	http.Handle(server.PreRebootEndpoint, airlock.PreReboot())
+	http.Handle(server.SteadyStateEndpoint, airlock.SteadyState())
+
+	listenAddr := fmt.Sprintf("%s:%d", runSettings.ServiceAddress, runSettings.ServicePort)
+	return http.ListenAndServe(listenAddr, nil)
 
 	return nil
 }
